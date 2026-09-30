@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>移动网络模型输入输出字段串联图</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+  <style>
+    :root {
+      --blue-50: #eef7ff;
+      --blue-100: #d8ecff;
+      --blue-300: #79bdf2;
+      --blue-500: #2f8dd3;
+      --blue-700: #17649b;
+      --green-50: #effaf4;
+      --green-500: #2aa866;
+      --orange-50: #fff6e8;
+      --orange-500: #e8912d;
+      --purple-50: #f4f0ff;
+      --purple-500: #7a5ee6;
+      --gray-50: #f7f9fb;
+      --gray-100: #eef1f5;
+      --gray-300: #c7d0dd;
+      --gray-600: #52606d;
+      --gray-800: #26323f;
+      --red-50: #fff0f0;
+      --red-500: #e35d5d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Microsoft YaHei", Arial, sans-serif;
+      background: linear-gradient(180deg, #f4f8fc 0%, #ffffff 45%);
+      color: var(--gray-800);
+    }
+
+    header {
+      padding: 24px 32px 12px;
+      border-bottom: 1px solid var(--gray-100);
+      background: rgba(255,255,255,0.86);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      color: var(--gray-600);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .toolbar {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search {
+      flex: 1;
+      min-width: 280px;
+      padding: 10px 14px;
+      border: 1px solid var(--gray-300);
+      border-radius: 10px;
+      outline: none;
+      font-size: 14px;
+      background: white;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: var(--gray-100);
+      color: var(--gray-600);
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .dot.source { background: var(--green-500); }
+    .dot.model { background: var(--blue-500); }
+    .dot.output { background: var(--orange-500); }
+    .dot.candidate { background: var(--purple-500); }
+
+    main {
+      padding: 24px 32px 48px;
+    }
+
+    .section {
+      margin-bottom: 28px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--gray-600);
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .diagram-wrap {
+      background: white;
+      border: 1px solid var(--gray-100);
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(30, 76, 120, 0.08);
+      padding: 18px;
+      overflow-x: auto;
+    }
+
+    .mermaid {
+      min-width: 1250px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid var(--gray-100);
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(30, 76, 120, 0.06);
+      padding: 16px;
+      transition: all 0.18s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(30, 76, 120, 0.1);
+    }
+
+    .card.hidden {
+      display: none;
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .model-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .model-meta {
+      color: var(--gray-600);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .id-tag {
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: var(--blue-50);
+      color: var(--blue-700);
+      font-weight: 700;
+      font-size: 12px;
+      height: fit-content;
+      white-space: nowrap;
+    }
+
+    .io-block {
+      margin-top: 12px;
+    }
+
+    .io-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--gray-800);
+    }
+
+    .field-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .field {
+      padding: 5px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.35;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-100);
+      color: var(--gray-800);
+    }
+
+    .field.input {
+      background: var(--blue-50);
+      border-color: #d4eaff;
+    }
+
+    .field.output {
+      background: var(--orange-50);
+      border-color: #ffe0ae;
+    }
+
+    .field.source {
+      background: var(--green-50);
+      border-color: #c9efd9;
+    }
+
+    .field.warn {
+      background: var(--purple-50);
+      border-color: #ddd4ff;
+    }
+
+    .edge-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(30, 76, 120, 0.06);
+      border: 1px solid var(--gray-100);
+    }
+
+    .edge-table th,
+    .edge-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--gray-100);
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .edge-table th {
+      background: var(--blue-50);
+      color: var(--blue-700);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .edge-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .note {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #fff9ed;
+      border: 1px solid #ffe1a8;
+      color: #735118;
+      font-size: 13px;
+      line-height: 1.65;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>移动网络模型输入输出字段串联图</h1>
+  <div class="subtitle">
+    根据模型注册表、模型-IO映射表、模型边字段映射表和流程图整理。主视图展示推理阶段 DAG，
+    下方模型卡片展示核心输入、输出字段。
+  </div>
+
+  <div class="toolbar">
+    <input id="search" class="search" placeholder="搜索模型 / 字段编号 / 字段名 / 英文字段名，例如 FD-0343、谱效、M-003、utm_x" />
+    <span class="badge"><span class="dot source"></span>原始数据源</span>
+    <span class="badge"><span class="dot model"></span>模型节点</span>
+    <span class="badge"><span class="dot output"></span>模型输出字段</span>
+    <span class="badge"><span class="dot candidate"></span>待细化 / 候选字段</span>
+  </div>
+</header>
+
+<main>
+  <section class="section">
+    <h2 class="section-title">1. 模型与字段主链路图</h2>
+    <div class="hint">
+      箭头标签格式：字段编号 / 字段语义。模型间连接优先采用你给的
+      “模型边字段映射表”和“依赖解析结果表”中的推理阶段正式 DAG。
+    </div>
+
+    <div class="diagram-wrap">
+      <pre class="mermaid">
+flowchart LR
+
+  %% ======================
+  %% class definitions
+  %% ======================
+  classDef source fill:#effaf4,stroke:#2aa866,stroke-width:1.5px,color:#1d5d3a;
+  classDef model fill:#eef7ff,stroke:#2f8dd3,stroke-width:1.5px,color:#174e78;
+  classDef model2 fill:#f4f0ff,stroke:#7a5ee6,stroke-width:1.5px,color:#4637a5;
+  classDef output fill:#fff6e8,stroke:#e8912d,stroke-width:1.5px,color:#7a4a13;
+  classDef warn fill:#fff0f0,stroke:#e35d5d,stroke-width:1.5px,color:#8b2c2c;
+
+  %% ======================
+  %% source nodes
+  %% ======================
+  subgraph S["原始数据层"]
+    MR[("MR数据<br/>FD-0332~0374<br/>FD-0800/0801")]
+    PARAM[("工参数据<br/>FD-0258~0331")]
+    AMAT[("A矩阵数据<br/>FD-0579~0587")]
+    KPI[("KPI数据<br/>FD-0375~0428<br/>FD-0500~0502")]
+    CFG[("NICMO/配置数据<br/>FD-0446<br/>FD-0608<br/>FD-0613~0681")]
+    DT[("路测数据<br/>FD-0527/0528<br/>FD-0534/0535")]
+    ENERGY[("能耗数据<br/>FD-0433~0437")]
+  end
+
+  %% ======================
+  %% main models
+  %% ======================
+  subgraph A["基础空间与信道建模链路"]
+    M001["M-001 数据补全模型<br/>ChaRT"]
+    M002["M-002 定位模型<br/>ChaRT"]
+    M003["M-003 栅格化模型<br/>CSG-AE"]
+    M004["M-004 信道与干扰模型<br/>RF-LSCM"]
+    M005["M-005 流量预测模型<br/>Graph-AVA / GNN"]
+    M008["M-008 谱效模型<br/>DiffusionSE"]
+  end
+
+  subgraph B["节能仿真与能耗链路"]
+    M006["M-006 节能策略仿真模型<br/>Two-stage-simulation"]
+    M007["M-007 能耗与用户速率模型<br/>Energy-consumption"]
+  end
+
+  subgraph O["优化 / 决策输出"]
+    OPT["优化模块 / 黑盒优化<br/>M-009 可接入"]
+    OUT_SE["谱效结果<br/>FD-0371 spectral_efficiency"]
+    OUT_TRAFFIC["流量预测结果<br/>FD-0365/0368"]
+    OUT_ENERGY["能耗结果<br/>FD-0435 board_energy_kwh"]
+  end
+
+  %% ======================
+  %% source to models
+  %% ======================
+  AMAT -->|"FD-0579 key<br/>FD-0580~0587 A矩阵属性"| M001
+  PARAM -->|"站址/方位角/功率/频点<br/>FD-0268/0269/0281/0282/0284/0297"| M001
+  MR -->|"MR观测补全字段<br/>FD-0343/0345/0348/0350"| M001
+
+  MR -->|"定位观测/位置标签<br/>FD-0800 utm_x<br/>FD-0801 utm_y"| M002
+  PARAM -->|"工参空间特征<br/>FD-0268/0269/0281/0284"| M002
+  AMAT -->|"FD-0579 key"| M002
+
+  MR -->|"MR样本特征<br/>FD-0332~0374"| M003
+  AMAT -->|"FD-0579~0587"| M003
+
+  PARAM -->|"天线/站址/方位角<br/>FD-0268/0269/0270/0282/0284"| M004
+  AMAT -->|"FD-0579 key"| M004
+
+  KPI -->|"负载/利用率/用户数<br/>FD-0381/0392/0393/0500~0502"| M006
+  CFG -->|"节能策略配置<br/>FD-0446/0608/0613~0681"| M006
+  PARAM -->|"频点/小区/工参<br/>FD-0288/0350等"| M006
+
+  KPI -->|"节能时长/负载<br/>FD-0386~0393/0381"| M007
+  PARAM -->|"板件/功率/带宽<br/>FD-0292/0298/0302/0304"| M007
+
+  DT -->|"路测电平集合<br/>FD-0527/0528/0534/0535"| M008
+  MR -->|"MR电平/SINR候选<br/>FD-0343/0345/0348/0350"| M008
+
+  %% ======================
+  %% model to model edges
+  %% ======================
+  M001 -->|"MAP-001 补全观测类字段<br/>FD-0343/0345/0348/0350"| M002
+  M001 -->|"MAP-002 补全观测/MR类字段<br/>FD-0343/0345/0348/0350"| M003
+
+  M002 -->|"MAP-003/004 定位坐标<br/>FD-0800 utm_x<br/>FD-0801 utm_y"| M003
+
+  M003 -->|"MAP-005 栅格结果类字段<br/>FD-0343/0348 + 栅格空间特征"| M004
+  M003 -->|"MAP-006 栅格样本/图结构字段<br/>待细化：邻接/样本关系"| M005
+
+  M004 -->|"MAP-007 信道估计相关字段<br/>FD-0343/0348 候选公共字段"| M008
+
+  M006 -->|"MAP-008 策略仿真结果<br/>FD-0387/0392/0393/0381"| M007
+
+  %% ======================
+  %% outputs
+  %% ======================
+  M008 -->|"FD-0371 谱效"| OUT_SE
+  M005 -->|"FD-0365 上行流量<br/>FD-0368 下行流量"| OUT_TRAFFIC
+  M007 -->|"FD-0435 基站单板能耗<br/>FD-0433 日期 / FD-0434 时间"| OUT_ENERGY
+
+  OUT_SE --> OPT
+  OUT_TRAFFIC --> OPT
+  OUT_ENERGY --> OPT
+  ENERGY -.训练标签/校验.-> M007
+
+  class MR,PARAM,AMAT,KPI,CFG,DT,ENERGY source;
+  class M001,M002,M003,M004,M005,M006,M007,M008 model;
+  class OPT,OUT_SE,OUT_TRAFFIC,OUT_ENERGY output;
+      </pre>
+    </div>
+
+    <div class="note">
+      注意：你给的数据里有几处字段语义存在轻微不一致，例如 M-002 的定位坐标在部分 IO 记录中训练/推理方向不完全一致；
+      此页面按字段字典和模型边映射表统一为：FD-0800 = UTM X 坐标，FD-0801 = UTM Y 坐标。
+      M-003 → M-005 的“图结构字段”当前在映射表中仍是待细化项。
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">2. 模型输入 / 输出字段卡片</h2>
+    <div class="hint">
+      这里按核心字段展示，避免把全部数百个原始字段铺满页面。搜索框支持筛选模型和字段。
+    </div>
+
+    <div id="cards" class="grid"></div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">3. 模型间字段映射表</h2>
+    <div class="hint">
+      根据“模型边字段映射表”和“依赖解析结果表”整理的推理阶段主连接。
+    </div>
+
+    <table class="edge-table" id="edgeTable">
+      <thead>
+        <tr>
+          <th>映射编号</th>
+          <th>上游模型</th>
+          <th>下游模型</th>
+          <th>连接字段 / 语义</th>
+          <th>字段角色</th>
+          <th>说明</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    securityLevel: "loose",
+    theme: "default",
+    flowchart: {
+      htmlLabels: true,
+      curve: "basis",
+      nodeSpacing: 48,
+      rankSpacing: 65
+    }
+  });
+
+  const models = [
+    {
+      id: "M-001",
+      name: "数据补全模型",
+      short: "ChaRT",
+      category: "数据补全",
+      desc: "补全 MR 采样数据中的缺失观测字段，提升后续定位和栅格化输入完整性。",
+      inputs: [
+        ["FD-0579", "A矩阵键", "key"],
+        ["FD-0268", "UTM X坐标", "utm_x"],
+        ["FD-0269", "UTM Y坐标", "utm_y"],
+        ["FD-0281", "机械方位角", "azimuth"],
+        ["FD-0284", "机械下倾角", "mechanical_downtilt"],
+        ["FD-0297", "发射功率", "power"],
+        ["FD-0343", "主服SSB波束电平", "serving_nr_ssb_beam_rsrp"],
+        ["FD-0345", "主服小区级SSB电平", "serving_cell_rsrp"],
+        ["FD-0348", "5G邻区SSB波束电平", "neighbor_nr_ssb_beam_rsrp"],
+        ["FD-0350", "5G邻区小区级SSB电平", "neighbor_nr_cell_rsrp"]
+      ],
+      outputs: [
+        ["FD-0343", "主服SSB波束电平", "serving_nr_ssb_beam_rsrp"],
+        ["FD-0345", "主服小区级SSB电平", "serving_cell_rsrp"],
+        ["FD-0348", "5G邻区SSB波束电平", "neighbor_nr_ssb_beam_rsrp"],
+        ["FD-0350", "5G邻区小区级SSB电平", "neighbor_nr_cell_rsrp"]
+      ],
+      downstream: "M-002 定位模型；M-003 栅格化模型"
+    },
+    {
+      id: "M-002",
+      name: "定位模型",
+      short: "ChaRT",
+      category: "定位",
+      desc: "结合 MR、工参和 A 矩阵特征，输出或校正样本空间坐标，用于后续栅格化。",
+      inputs: [
+        ["FD-0579", "A矩阵键", "key"],
+        ["FD-0268", "工参UTM X坐标", "utm_x"],
+        ["FD-0269", "工参UTM Y坐标", "utm_y"],
+        ["FD-0343", "主服SSB波束电平", "serving_nr_ssb_beam_rsrp"],
+        ["FD-0345", "主服小区级SSB电平", "serving_cell_rsrp"],
+        ["FD-0348", "5G邻区SSB波束电平", "neighbor_nr_ssb_beam_rsrp"],
+        ["FD-0350", "5G邻区小区级SSB电平", "neighbor_nr_cell_rsrp"]
+      ],
+      outputs: [
+        ["FD-0800", "UTM X 坐标", "utm_x"],
+        ["FD-0801", "UTM Y 坐标", "utm_y"]
+      ],
+      downstream: "M-003 栅格化模型"
+    },
+    {
+      id: "M-003",
+      name: "栅格化模型",
+      short: "CSG-AE",
+      category: "栅格化",
+      desc: "将连续 MR / 信道测量值转换为规则栅格数据，并形成栅格级空间特征。",
+      inputs: [
+        ["FD-0332", "站编号", "nodeb_id"],
+        ["FD-0333", "小区编号", "cell_id"],
+        ["FD-0334", "用户编号", "call_id"],
+        ["FD-0343", "主服SSB波束电平", "serving_nr_ssb_beam_rsrp"],
+        ["FD-0348", "5G邻区SSB波束电平", "neighbor_nr_ssb_beam_rsrp"],
+        ["FD-0365", "上行流量", "ul_throughput_volume"],
+        ["FD-0368", "下行流量", "dl_throughput_volume"],
+        ["FD-0371", "谱效", "spectral_efficiency"],
+        ["FD-0579", "A矩阵键", "key"],
+        ["FD-0580", "A矩阵数据", "a_matrix_tensor"],
+        ["FD-0800", "UTM X坐标", "utm_x"],
+        ["FD-0801", "UTM Y坐标", "utm_y"]
+      ],
+      outputs: [
+        ["FD-0343", "栅格级主服SSB波束电平", "serving_nr_ssb_beam_rsrp"],
+        ["FD-0348", "栅格级5G邻区SSB波束电平", "neighbor_nr_ssb_beam_rsrp"],
+        ["待细化", "栅格索引 / 空间特征", "grid_feature"],
+        ["待细化", "图邻接 / 样本关系", "graph_relation"]
+      ],
+      downstream: "M-004 信道与干扰模型；M-005 流量预测模型"
+    },
+    {
+      id: "M-004",
+      name: "信道与干扰模型",
+      short: "RF-LSCM",
+      category: "信道建模",
+      desc: "基于工参、A矩阵和栅格空间特征，建模同频干扰和信道估计结果。",
+      inputs: [
+        ["FD-0579", "A矩阵键", "key"],
+        ["FD-0800", "UTM X坐标", "utm_x"],
+        ["FD-0801", "UTM Y坐标", "utm_y"],
+        ["FD-0268", "工参UTM X坐标", "utm_x"],
+        ["FD-0269", "工参UTM Y坐标", "utm_y"],
+        ["FD-0270", "天线高度", "height"],
+        ["FD-0282", "机械方位角", "mechanical_azimuth"],
+        ["FD-0284", "机械下倾角", "mechanical_downtilt"]
+      ],
+      outputs: [
+        ["FD-0343", "主服SSB波束电平 / 信道估计", "serving_nr_ssb_beam_rsrp"],
+        ["FD-0348", "5G邻区SSB波束电平 / 干扰估计", "neighbor_nr_ssb_beam_rsrp"]
+      ],
+      downstream: "M-008 谱效模型"
+    },
+    {
+      id: "M-005",
+      name: "流量预测模型",
+      short: "Graph-AVA / GNN",
+      category: "流量预测",
+      desc: "基于栅格样本和图结构关系，预测小时级小区 / 栅格级流量。",
+      inputs: [
+        ["FD-0365", "上行流量", "ul_throughput_volume"],
+        ["FD-0368", "下行流量", "dl_throughput_volume"],
+        ["待细化", "栅格样本特征", "grid_sample_feature"],
+        ["待细化", "图邻接关系", "graph_adjacency"]
+      ],
+      outputs: [
+        ["FD-0365", "预测上行流量", "ul_throughput_volume"],
+        ["FD-0368", "预测下行流量", "dl_throughput_volume"]
+      ],
+      downstream: "优化模块 / 调度模块"
+    },
+    {
+      id: "M-006",
+      name: "节能策略仿真模型",
+      short: "Two-stage-simulation",
+      category: "能耗建模",
+      desc: "结合 KPI、MR 和节能配置，仿真不同节能策略下的关断时间、负载和用户数变化。",
+      inputs: [
+        ["FD-0288", "下行频点号", "dl_arfcn"],
+        ["FD-0350", "5G邻区小区级SSB电平", "neighbor_nr_cell_rsrp"],
+        ["FD-0381", "平均RRC连接用户数", "avg_rrc_connected_users"],
+        ["FD-0392", "下行PRB利用率", "dl_prb_utilization"],
+        ["FD-0393", "上行PRB利用率", "ul_prb_utilization"],
+        ["FD-0500", "下行PDSCH DRB业务平均使用PRB", "dl_pdsch_drb_avg_prb_used"],
+        ["FD-0501", "下行平均使用PRB个数", "dl_avg_prb_used"],
+        ["FD-0502", "下行平均可用PRB个数", "dl_avg_prb_available"],
+        ["FD-0613", "节能策略索引", "power_saving_policy_index"],
+        ["FD-0614", "节能类型", "power_saving_type"],
+        ["FD-0615", "开始时间", "start_time"],
+        ["FD-0616", "结束时间", "stop_time"],
+        ["FD-0680", "休眠开始时间", "dormancy_start_time"],
+        ["FD-0681", "休眠结束时间", "dormancy_stop_time"]
+      ],
+      outputs: [
+        ["FD-0387", "载波关断节能时长", "carrier_shutdown_duration_sec"],
+        ["FD-0392", "下行PRB利用率", "dl_prb_utilization"],
+        ["FD-0393", "上行PRB利用率", "ul_prb_utilization"],
+        ["FD-0381", "平均RRC连接用户数", "avg_rrc_connected_users"]
+      ],
+      downstream: "M-007 能耗与用户速率模型"
+    },
+    {
+      id: "M-007",
+      name: "能耗与用户速率模型",
+      short: "Energy-consumption",
+      category: "能耗建模",
+      desc: "结合业务量、节能动作时长、工参和环境因素，预测基站单板能耗和用户体验相关结果。",
+      inputs: [
+        ["FD-0381", "平均RRC连接用户数", "avg_rrc_connected_users"],
+        ["FD-0386", "深度休眠导致不可用时长", "deep_sleep_unavailable_duration_sec"],
+        ["FD-0387", "载波关断节能时长", "carrier_shutdown_duration_sec"],
+        ["FD-0388", "节能导致不可用时长", "energy_saving_unavailable_duration_sec"],
+        ["FD-0389", "RF通道关断节能时长", "rf_shutdown_duration_sec"],
+        ["FD-0390", "符号关断节能时长", "symbol_shutdown_duration_us"],
+        ["FD-0391", "射频通道动态关断时长", "dynamic_rf_shutdown_duration_us"],
+        ["FD-0392", "下行PRB利用率", "dl_prb_utilization"],
+        ["FD-0393", "上行PRB利用率", "ul_prb_utilization"],
+        ["FD-0292", "下行带宽", "dl_bandwidth"],
+        ["FD-0298", "最大发射功率", "max_transmit_power"],
+        ["FD-0302", "收发模式", "tx_rx_mode"],
+        ["FD-0304", "AAU/天线类型", "aau_type"]
+      ],
+      outputs: [
+        ["FD-0435", "基站单板能耗", "board_energy_kwh"],
+        ["FD-0433", "日期", "date"],
+        ["FD-0434", "时间", "time"]
+      ],
+      downstream: "优化模块 / 节能策略评估"
+    },
+    {
+      id: "M-008",
+      name: "谱效模型",
+      short: "DiffusionSE",
+      category: "谱效建模",
+      desc: "基于 MR、路测和信道估计相关字段，预测移动网络谱效。",
+      inputs: [
+        ["FD-0343", "主服SSB波束电平", "serving_nr_ssb_beam_rsrp"],
+        ["FD-0345", "主服小区级SSB电平", "serving_cell_rsrp"],
+        ["FD-0348", "5G邻区SSB波束电平", "neighbor_nr_ssb_beam_rsrp"],
+        ["FD-0350", "5G邻区小区级SSB电平", "neighbor_nr_cell_rsrp"],
+        ["FD-0527", "主服SSB电平", "serving_ssb_rsrp"],
+        ["FD-0528", "邻区电平集合", "neighbor_rsrp_dict"],
+        ["FD-0534", "主服小区级电平", "serv_rsrp"],
+        ["FD-0535", "协作小区小区级电平", "ass_rsrp"]
+      ],
+      outputs: [
+        ["FD-0371", "谱效", "spectral_efficiency"]
+      ],
+      downstream: "优化模块 / 无线资源优化"
+    }
+  ];
+
+  const edges = [
+    {
+      id: "MAP-001",
+      from: "M-001 数据补全模型",
+      to: "M-002 定位模型",
+      field: "补全观测类字段：FD-0343、FD-0345、FD-0348、FD-0350",
+      role: "主特征",
+      note: "流程图推断；主连接字段；用于提升定位输入完整性。"
+    },
+    {
+      id: "MAP-002",
+      from: "M-001 数据补全模型",
+      to: "M-003 栅格化模型",
+      field: "补全观测 / MR 类字段：FD-0343、FD-0345、FD-0348、FD-0350",
+      role: "主特征",
+      note: "流程图推断；主连接字段；进入栅格化前补全 MR 观测。"
+    },
+    {
+      id: "MAP-003",
+      from: "M-002 定位模型",
+      to: "M-003 栅格化模型",
+      field: "FD-0800：UTM X 坐标",
+      role: "坐标",
+      note: "字段匹配；候选字段；定位结果进入栅格化。"
+    },
+    {
+      id: "MAP-004",
+      from: "M-002 定位模型",
+      to: "M-003 栅格化模型",
+      field: "FD-0801：UTM Y 坐标",
+      role: "坐标",
+      note: "字段匹配；候选字段；定位结果进入栅格化。"
+    },
+    {
+      id: "MAP-005",
+      from: "M-003 栅格化模型",
+      to: "M-004 信道与干扰模型",
+      field: "栅格结果类字段：FD-0343、FD-0348 + 栅格空间特征",
+      role: "中间特征",
+      note: "流程图推断；待细化为栅格索引 / 空间特征字段。"
+    },
+    {
+      id: "MAP-006",
+      from: "M-003 栅格化模型",
+      to: "M-005 流量预测模型",
+      field: "栅格样本 / 图结构字段",
+      role: "中间特征",
+      note: "流程图推断；待细化为图邻接 / 样本关系字段。"
+    },
+    {
+      id: "MAP-007",
+      from: "M-004 信道与干扰模型",
+      to: "M-008 谱效模型",
+      field: "信道估计相关字段：FD-0343、FD-0348",
+      role: "中间特征",
+      note: "字段匹配；当前为候选公共字段。"
+    },
+    {
+      id: "MAP-008",
+      from: "M-006 节能策略仿真模型",
+      to: "M-007 能耗与用户速率模型",
+      field: "策略仿真结果：FD-0387、FD-0392、FD-0393、FD-0381",
+      role: "中间特征",
+      note: "流程图推断；由节能仿真输出驱动能耗预测。"
+    }
+  ];
+
+  function fieldPill(field, type) {
+    const [id, cn, en] = field;
+    const cls = id === "待细化" ? "field warn" : `field ${type}`;
+    return `<span class="${cls}" title="${en || ""}">${id}｜${cn}${en ? "｜" + en : ""}</span>`;
+  }
+
+  function renderCards() {
+    const root = document.getElementById("cards");
+    root.innerHTML = models.map(m => `
+      <article class="card" data-search="${[
+        m.id, m.name, m.short, m.category, m.desc, m.downstream,
+        ...m.inputs.flat(), ...m.outputs.flat()
+      ].join(" ").toLowerCase()}">
+        <div class="card-head">
+          <div>
+            <div class="model-title">${m.name}</div>
+            <div class="model-meta">${m.short}｜${m.category}</div>
+          </div>
+          <div class="id-tag">${m.id}</div>
+        </div>
+
+        <div class="model-meta">${m.desc}</div>
+
+        <div class="io-block">
+          <div class="io-title">输入字段</div>
+          <div class="field-list">
+            ${m.inputs.map(f => fieldPill(f, "input")).join("")}
+          </div>
+        </div>
+
+        <div class="io-block">
+          <div class="io-title">输出字段</div>
+          <div class="field-list">
+            ${m.outputs.map(f => fieldPill(f, "output")).join("")}
+          </div>
+        </div>
+
+        <div class="io-block">
+          <div class="io-title">下游去向</div>
+          <div class="field-list">
+            <span class="field source">${m.downstream}</span>
+          </div>
+        </div>
+      </article>
+    `).join("");
+  }
+
+  function renderEdges() {
+    const tbody = document.querySelector("#edgeTable tbody");
+    tbody.innerHTML = edges.map(e => `
+      <tr data-search="${Object.values(e).join(" ").toLowerCase()}">
+        <td><strong>${e.id}</strong></td>
+        <td>${e.from}</td>
+        <td>${e.to}</td>
+        <td>${e.field}</td>
+        <td>${e.role}</td>
+        <td>${e.note}</td>
+      </tr>
+    `).join("");
+  }
+
+  function bindSearch() {
+    const input = document.getElementById("search");
+
+    input.addEventListener("input", () => {
+      const q = input.value.trim().toLowerCase();
+
+      document.querySelectorAll(".card").forEach(card => {
+        const hit = card.dataset.search.includes(q);
+        card.classList.toggle("hidden", q && !hit);
+      });
+
+      document.querySelectorAll("#edgeTable tbody tr").forEach(row => {
+        const hit = row.dataset.search.includes(q);
+        row.style.display = q && !hit ? "none" : "";
+      });
+    });
+  }
+
+  renderCards();
+  renderEdges();
+  bindSearch();
+</script>
+</body>
+</html>
